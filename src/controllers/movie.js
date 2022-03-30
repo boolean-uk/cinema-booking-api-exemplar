@@ -1,5 +1,42 @@
 const prisma = require('../utils/prisma');
 
+const createMovie = async (req, res) => {
+    // req 2.1 - Build a route to create a new movie
+    // const { title, runtimeMins } = req.body;
+    // const createdMovie = await prisma.movie.create({
+    //     data: {
+    //         title,
+    //         runtimeMins
+    //     }
+    // });
+
+    // req 2.2 - Include the ability to create screenings for the movie if the request body has a `screenings` property
+    const { title, runtimeMins, screenings } = req.body;
+    const data = {
+        title,
+        runtimeMins
+    };
+
+    if (screenings) {
+        data.screenings = {
+            create: screenings.map(screening => ({...screening, startsAt: new Date(screening.startsAt)}))
+        }
+    }
+
+    const createdMovie = await prisma.movie.create({
+        data,
+        include: {
+            screenings: true
+        }
+    });
+
+    // for req 2.3 - Send back an error message if a movie with the same name already exists in the database
+    // You'd do something like .findMany({ where: { title: req.body.title }})
+    // and if it gives you a result, res.json an error back
+
+    res.json({ data: createdMovie });
+}
+
 const getAllMovies = async (req, res) => {
     // req 1.1 - Build a route to retrieve a list of every movie
     // const allMovies = await prisma.movie.findMany();
@@ -65,5 +102,6 @@ const buildWhereClause = (query) => {
 }
 
 module.exports = {
-    getAllMovies
+    getAllMovies,
+    createMovie
 }
