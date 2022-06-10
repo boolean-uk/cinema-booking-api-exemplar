@@ -1,7 +1,15 @@
 const prisma = require('../utils/prisma');
+const {
+  createMovieQuery,
+  findManyQuery,
+  getMovieQuery
+} = require('../movies/queries.js')
 
 const getMovies = async (req, res) => {
+    const runtimeMinsFilters = findManyQuery({...req})
+
     const movies = await prisma.movie.findMany({
+        where: runtimeMinsFilters,
         include: {
             screenings: true
         }
@@ -11,28 +19,28 @@ const getMovies = async (req, res) => {
 }
 
 const createMovie = async (req, res)=> {
-    const movie = await prisma.movie.create({
-        data: {
-            title: req.body.title,
-            runtimeMins: Number(req.body.runtimeMins)
-        }
-    })
+    const movieData = createMovieQuery({...req})
 
-    res.json({ data: movie });
+    try {
+      const movie = await prisma.movie.create({ data: movieData })
+      res.json({ data: movie });
+    } catch (e) {
+      return res.status(400).json({ error: e.message })
+    }
 }
 
 const getMovie = async (req, res) => {
-  const movie = await prisma.movie.findUnique({
-    where: {
-      id: Number(req.params.id)
-    }
-  })
+  const whereData = getMovieQuery({...req})
 
-  if (!movie) {
-    return res.status(404).json({ error: `sorry movie id: ${id} not found` });
+  try {
+    const movie = await prisma.movie.findUnique({
+      where: whereData,
+      rejectOnNotFound: true
+    })
+    res.json({ data: movie });
+  } catch (e) {
+    res.status(404).json({ error: e.message });
   }
-
-  res.json({ data: movie });
 }
 
 module.exports = {
